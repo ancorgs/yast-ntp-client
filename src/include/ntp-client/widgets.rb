@@ -1095,6 +1095,25 @@ module Yast
       nil
     end
 
+    # List of servers for a given country, with the ntp.org servers as
+    # the first option
+    def sorted_servers(country)
+      servers = NtpClient.GetNtpServersByCountry(country, false)
+      servers.sort do |a,b|
+        # We are just interested in the strings encapsulated
+        # in the structure of Yast:Term
+        a = a[0][0]
+        b = b[0][0]
+        if a =~ /pool.ntp.org$/
+          -1
+        elsif b =~ /pool.ntp.org$/
+          1
+        else
+          a <=> b
+        end
+      end
+    end
+
     # Handle function of the widget
     # @param [String] id string widget id
     # @param [Hash] event map event that caused storing process
@@ -1118,7 +1137,6 @@ module Yast
       if country != @last_country
         @last_country = country
 
-        items = NtpClient.GetNtpServersByCountry(country, false)
         UI.ReplaceWidget(
           :servers_rp,
           VBox(
@@ -1130,7 +1148,7 @@ module Yast
               Opt(:hstretch),
               # selection box header
               _("Public NTP &Servers"),
-              items
+              sorted_servers(country)
             )
           )
         )
